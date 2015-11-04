@@ -74,7 +74,7 @@ swap_out (struct page *p)
   p->sector = slot * PAGE_SECTORS;
 
   // Write out page sectors
-/* add code here */ 
+  /* add code here */ 
  
   p->private = false;
   p->file = NULL;
