@@ -75,7 +75,7 @@ swap_out (struct page *p)
 
   // Write out page sectors
   
-  lock_acquire(&swap_lock);
+  //lock_acquire(&swap_lock);
   for(i = 0; i < PAGE_SECTORS; i++)
   {
     block_write(swap_device,
