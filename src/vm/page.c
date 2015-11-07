@@ -51,7 +51,6 @@ page_for_addr (const void *address)
         return hash_entry (e, struct page, hash_elem);
 
       /* No page.  Expand stack? */
-
       if(address >= PHYS_BASE - STACK_MAX)
       {
         if (address >= thread_current()->user_esp - 32)
@@ -151,32 +150,22 @@ page_out (struct page *p)
 
   pagedir_clear_page(p->thread->pagedir, p->addr);
 
-  /* Has the frame been modified? */
-  /* Write frame contents to disk if necessary. */
   if(pagedir_is_dirty(p->thread->pagedir, p->addr))
   {
-    if(p->file != NULL && p->private)
-    {
-      ok = swap_out(p);
-    }
-    else if(file_write_at (p->file, p->frame->base, p->file_bytes, p->file_offset) == p->file_bytes)
-    {
-      ok = true;
-    }
+      if(p->private)
+      {
+          ok = swap_out(p);
+          p->frame = NULL;
+      }
+      else if(!p->private && p->file != NULL)
+      {
+          file_write_at(p->file, p->frame->base, p->file_bytes, p->file_offset);
+          p->frame = NULL;
+      }
+      
+      pagedir_set_dirty(p->thread->pagedir, p->addr, false);
   }
-  else if(p->file != NULL && !p->private)
-  {
-    ok = true;
-  }
-  else 
-  {
-    ok = swap_out(p);
-  }
-  
-  if(ok)
-  {
-    p->frame = NULL;
-  }
+
   return ok;
 }
 
