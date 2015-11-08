@@ -29,11 +29,17 @@ Montana Grier
 >> A1: In a few paragraphs, describe the existing code for locating the
 >> frame, if any, that contains the data of a given page.
 
+In frame.c, a call to try_frame_alloc_and_lock will find a frame to associate with 
+the given page. It does this by either locating an unused, available frame to bind 
+to the page, or freeing up a frame that has not recently been accessed (by evicting 
+the associated page from memory).
 
 ---- SYNCHRONIZATION ----
 
 >> A2: When two user processes both need a new frame at the same time,
 >> how are races avoided?
+
+Locks are used to prevent race conditions while finding and associating frames.
 
 		       PAGING TO AND FROM DISK
 		       =======================
@@ -43,9 +49,20 @@ Montana Grier
 >> B1: When a frame is required but none is free, some frame must be
 >> evicted.  Describe the algorithm used to choose a frame to evict.
 
+First, the algorithm attempts to find a free frame that is not yet bound to any 
+page. If no frames are immediately available, the algorithm attempt to evict 
+a page from memory, making its frame available for use. We then bind the page 
+that was passed in to the newly-freed frame.
+
 >> B2: Explain your heuristic for deciding whether a page fault for an
 >> invalid virtual address should cause the stack to be extended into
 >> the page that faulted.
+
+We first evaluate if the requested address is within the user space (between the 
+start of the user memory space and the maximum size of the process stack). If so,
+we evaluate whether the requested address is more than 32 bytes below the current
+thread's stack pointer because the PUSHA instruction pushes 32 bytes at a time.
+If all of the above conditions are met, we call page_allocate to extend the stack.
 
 			 MEMORY MAPPED FILES
 			 ===================
@@ -56,14 +73,27 @@ Montana Grier
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+We did not add any new data structures or members.
+
 ---- ALGORITHMS ----
 
 >> C2: Describe how memory mapped files integrate into your virtual
 >> memory subsystem.  Explain how the page fault and eviction
 >> processes differ between swap pages and other pages.
 
+Memory mapping affords us the ability to treat the disk as the swap device for 
+file pages. When a memory-mapped page need to be evicted to accomodate a new page,
+the contents of the page to be evicted are written back to their file location on
+the disk rather than performing a simple swap.
+
 >> C3: Explain how you determine whether a new file mapping overlaps
 >> any existing segment.
+
+As we map pages to the mapping structure, we can be sure that our mapping doesn't 
+overlap with other mapping structures because attempting to allocate a page for 
+an address that has already been allocated will return a null page pointer. Evaluating
+the validity of the pointer indicates whether we have encountered and overlap and 
+should unmap the entire mapping.
 
 ---- RATIONALE ----
 
@@ -73,6 +103,10 @@ Montana Grier
 >> that much of their implementation can be shared.  Explain why your
 >> implementation either does or does not share much of the code for
 >> the two situations.
+
+Both of these types of operations employ the page_out function, which can be 
+found in page.c. The page_out function handles differentiation between memory-mapped
+files and standard pages.
 
 			   SURVEY QUESTIONS
 			   ================
