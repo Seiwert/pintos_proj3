@@ -56,7 +56,7 @@ page_for_addr (const void *address)
       {
         if (address >= thread_current()->user_esp - 32)
         {
-          return page_allocate((void*)address, false);
+          return page_allocate((void*)p.addr, false);
         }
       }
     }
@@ -153,26 +153,27 @@ page_out (struct page *p)
 
   /* Has the frame been modified? */
   /* Write frame contents to disk if necessary. */
-  if(pagedir_is_dirty(p->thread->pagedir, p->addr))
+  if(p->file != NULL)
   {
-    if(p->file != NULL && p->private)
+    if(pagedir_is_dirty(p->thread->pagedir, p->addr))
     {
-      ok = swap_out(p);
+      if(p->private)
+      {
+        ok = swap_out(p);
+      }
+      else if(file_write_at (p->file, p->frame->base, p->file_bytes, p->file_offset) == p->file_bytes)
+      {
+        ok = true;
+      }
     }
-    else if(file_write_at (p->file, p->frame->base, p->file_bytes, p->file_offset) == p->file_bytes)
-    {
+    else
       ok = true;
-    }
-  }
-  else if(p->file != NULL && !p->private)
-  {
-    ok = true;
   }
   else 
   {
     ok = swap_out(p);
   }
-  
+
   if(ok)
   {
     p->frame = NULL;
