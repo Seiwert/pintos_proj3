@@ -150,20 +150,38 @@ page_out (struct page *p)
 
   pagedir_clear_page(p->thread->pagedir, p->addr);
 
-  if(pagedir_is_dirty(p->thread->pagedir, p->addr))
+  if(p->file != NULL)
   {
+    if(pagedir_is_dirty(p->thread->pagedir, p->addr))
+    {
       if(p->private)
       {
-          ok = swap_out(p);
-          p->frame = NULL;
+          ok = swap_out(p);          
       }
-      else if(!p->private && p->file != NULL)
+      else
       {
-          file_write_at(p->file, p->frame->base, p->file_bytes, p->file_offset);
-          p->frame = NULL;
+          ok = file_write_at(p->file, 
+                             p->frame->base, 
+                             p->file_bytes, 
+                             p->file_offset) == p->file_bytes;
       }
-      
-      pagedir_set_dirty(p->thread->pagedir, p->addr, false);
+    }
+    else
+    {
+      // page was not dirty anyway.
+      ok = true;
+    }
+  }
+  else
+  {
+    // no file association; just swap the page out.
+    ok = swap_out(p);
+  }
+
+  if(ok)
+  {
+    // page eviction was successful; disassociate this page's frame.
+    p->frame = NULL;
   }
 
   return ok;
