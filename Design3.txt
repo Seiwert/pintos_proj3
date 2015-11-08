@@ -21,6 +21,8 @@ Montana Grier
 >> preparing your submission, other than the Pintos documentation, course
 >> text, lecture notes, and course staff.
 
+Again, we drew inspiration from https://github.com/ryantimwilson/Pintos-Project-3
+
 			PAGE TABLE MANAGEMENT
 			=====================
 
